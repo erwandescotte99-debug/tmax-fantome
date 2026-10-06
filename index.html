@@ -1,38 +1,42 @@
 <!doctype html>
 <html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>TMAX Fantôme</title>
-<style>body{margin:0;background:#111;color:#fff;font-family:sans-serif;display:flex;flex-direction:column;align-items:center;touch-action:none}canvas{max-width:100vw;max-height:85vh;background:#222}p{margin:6px;opacity:.7;font-size:14px;text-align:center}</style>
-</head><body>
-<canvas id="c" width="360" height="560"></canvas>
-<p>← → ou toucher gauche/droite. Toutes les 5 s, un fantôme rejoue ton trajet. Évite-toi !</p>
+<title>Poisson Piñata</title>
+<style>
+body{margin:0;min-height:100vh;background:linear-gradient(#4fc3f7,#0277bd);font-family:sans-serif;color:#fff;text-align:center;user-select:none;overflow-x:hidden}
+#f{font-size:80px;margin:30px auto 10px;height:240px;display:flex;align-items:center;justify-content:center;position:relative;transition:font-size .3s cubic-bezier(.3,1.8,.5,1)}
+button{font-size:22px;padding:14px 26px;margin:8px;border:0;border-radius:14px;cursor:pointer;font-weight:bold}
+#n{background:#ff4081;color:#fff}#s{background:#ffeb3b}#r{background:#fff;display:none}
+h1{margin:16px 0 0}p{font-size:20px;margin:8px}
+#p{display:inline-block;animation:w .3s infinite}
+@keyframes w{0%,100%{transform:rotate(calc(var(--a)*-1deg))}50%{transform:rotate(calc(var(--a)*1deg))}}
+.gulp{animation:g .3s!important}@keyframes g{40%{transform:scale(1.35,.8)}70%{transform:scale(.9,1.15)}}
+.swell{animation:sw .6s forwards!important}@keyframes sw{0%{transform:scale(1)}30%{transform:scale(1.2) rotate(-8deg)}60%{transform:scale(1.5) rotate(8deg)}100%{transform:scale(2.3);filter:hue-rotate(-60deg) saturate(3);opacity:.8}}
+.c{position:absolute;font-size:34px;pointer-events:none}
+.fly{animation:fl .4s ease-in forwards}@keyframes fl{from{transform:translateY(260px)}to{transform:translateY(0) scale(.3);opacity:0}}
+.boom{animation:bo 1s ease-out forwards}@keyframes bo{to{transform:translate(var(--x),var(--y)) rotate(720deg);opacity:0}}
+</style></head><body>
+<h1>🍬 Poisson Piñata 🍬</h1>
+<p>Nourris-le... mais pas trop ! Sa limite secrète change à chaque partie.</p>
+<div id="f"><span id="p">🐠</span></div>
+<p id="m">Bonbons : 0</p>
+<button id="n">🍬 Nourrir</button><button id="s">✋ Stop</button><button id="r">🔄 Rejouer</button>
+<p id="b"></p>
 <script>
-const c=document.getElementById('c'),x=c.getContext('2d'),W=360,H=560,Y=440,R=5*60;
-let p,rec,ghosts,t,score,best=+localStorage.tmaxBest||0,on=false,dead=false,k={},coin,road=0;
-function reset(){p=W/2;rec=[];ghosts=[];t=0;score=0;dead=false;coin=newCoin()}
-function newCoin(){return{x:40+Math.random()*(W-80),y:-20}}
-onkeydown=e=>{k[e.key]=1;if(!on||dead){reset();on=true}};onkeyup=e=>k[e.key]=0;
-c.onpointerdown=e=>{if(!on||dead){reset();on=true;return}const r=c.getBoundingClientRect();k.t=e.clientX-r.left<r.width/2?-1:1};
-onpointerup=()=>k.t=0;
-function tmax(px,col,a){x.globalAlpha=a;x.fillStyle=col;x.fillRect(px-9,Y-28,18,56);x.fillStyle='#000';x.fillRect(px-5,Y-36,10,10);x.fillRect(px-5,Y+26,10,10);x.fillStyle='#ff0';x.fillRect(px-4,Y-30,8,4);x.fillStyle='#fff';x.font='bold 8px sans-serif';x.fillText('T',px-3,Y+4);x.globalAlpha=1}
-function step(){
- if(on&&!dead){
-  const d=(k.ArrowLeft||k.q||k.a?-1:0)+(k.ArrowRight||k.d?1:0)+(k.t||0);
-  p=Math.max(30,Math.min(W-30,p+d*4.5));rec.push(p);t++;road=(road+6)%40;
-  coin.y+=4;if(coin.y>H)coin=newCoin();
-  if(Math.abs(coin.x-p)<20&&Math.abs(coin.y-Y)<30){score+=5;coin=newCoin()}
-  for(const g of ghosts)if(Math.abs(g[t-1]-p)<18){dead=true;if(score>best)localStorage.tmaxBest=best=score}
-  if(t>=R){ghosts.push(rec);rec=[];t=0;score+=10}
- }
- x.fillStyle='#333';x.fillRect(0,0,W,H);x.fillStyle='#ccc';
- for(let i=-40;i<H;i+=40){x.fillRect(W/3-2,i+road,4,20);x.fillRect(2*W/3-2,i+road,4,20)}
- x.fillStyle='#fc0';x.beginPath();x.arc(coin.x,coin.y,8,0,7);x.fill();
- ghosts.forEach((g,i)=>tmax(g[Math.min(t,R-1)],`hsl(${i*60+180},80%,60%)`,.45));
- tmax(p,'#e22',1);
- x.fillStyle='#fff';x.font='bold 18px sans-serif';x.fillText(`Score ${score}  Fantômes ${ghosts.length}`,10,26);
- x.fillText(`Record ${best}`,10,48);x.fillStyle='#0f0';x.fillRect(0,H-6,W*t/R,6);
- if(!on||dead){x.fillStyle='rgba(0,0,0,.7)';x.fillRect(0,180,W,140);x.fillStyle='#fff';x.textAlign='center';
-  x.font='bold 26px sans-serif';x.fillText(dead?'Percuté par ton passé !':'TMAX FANTÔME',W/2,230);
-  x.font='16px sans-serif';x.fillText('Appuie / touche pour rouler',W/2,280);x.textAlign='left'}
- requestAnimationFrame(step)}
-reset();step();
+let lim,c,busy,best=+localStorage.pinBest||0;const $=id=>document.getElementById(id),f=$('f'),p=$('p');
+function bit(t,cls,x,y){const e=document.createElement('span');e.className='c '+cls;e.textContent=t;
+ if(x)e.style.cssText=`--x:${x}px;--y:${y}px`;f.appendChild(e);setTimeout(()=>e.remove(),1000)}
+function start(){lim=5+Math.floor(Math.random()*36);c=0;busy=0;p.textContent='🐠';p.className='';p.style.visibility='';p.style.setProperty('--a',0);
+ f.style.fontSize='80px';$('m').textContent='Bonbons : 0';$('n').style.display=$('s').style.display='';$('r').style.display='none';$('b').textContent='Meilleur score : '+best}
+function end(t){$('m').innerHTML=t;$('n').style.display=$('s').style.display='none';$('r').style.display=''}
+$('n').onclick=()=>{if(busy)return;busy=1;c++;bit('🍬','fly');
+ setTimeout(()=>{busy=0;
+  if(c>lim){busy=1;p.className='swell';$('m').textContent='Oh oh...';
+   setTimeout(()=>{p.style.visibility='hidden';
+    for(let i=0;i<24;i++){const a=Math.random()*6.28,d=120+Math.random()*200;bit(['🍬','🍭','💥','🐟'][i%4],'boom',Math.cos(a)*d,Math.sin(a)*d)}
+    end(`BOUM ! Il explose à ${c} bonbons (limite : ${lim}).<br>Score : 0`)},600);return}
+  f.style.fontSize=80+c*4+'px';p.className='';void p.offsetWidth;p.className='gulp';
+  setTimeout(()=>p.className='',300);p.style.setProperty('--a',Math.max(0,c/lim*12+Math.random()*6-3));$('m').textContent='Bonbons : '+c},400)};
+$('s').onclick=()=>{if(busy)return;const s=Math.round(100*c/lim);if(s>best)localStorage.pinBest=best=s;
+ end(`Stop à ${c} bonbons. Sa limite était ${lim}.<br>Score : ${s}/100 ${s==100?'🏆 PARFAIT !':''}`);$('b').textContent='Meilleur score : '+best};
+$('r').onclick=start;start();
 </script></body></html>
