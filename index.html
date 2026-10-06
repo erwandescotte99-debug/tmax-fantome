@@ -1,0 +1,38 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>TMAX Fantôme</title>
+<style>body{margin:0;background:#111;color:#fff;font-family:sans-serif;display:flex;flex-direction:column;align-items:center;touch-action:none}canvas{max-width:100vw;max-height:85vh;background:#222}p{margin:6px;opacity:.7;font-size:14px;text-align:center}</style>
+</head><body>
+<canvas id="c" width="360" height="560"></canvas>
+<p>← → ou toucher gauche/droite. Toutes les 5 s, un fantôme rejoue ton trajet. Évite-toi !</p>
+<script>
+const c=document.getElementById('c'),x=c.getContext('2d'),W=360,H=560,Y=440,R=5*60;
+let p,rec,ghosts,t,score,best=+localStorage.tmaxBest||0,on=false,dead=false,k={},coin,road=0;
+function reset(){p=W/2;rec=[];ghosts=[];t=0;score=0;dead=false;coin=newCoin()}
+function newCoin(){return{x:40+Math.random()*(W-80),y:-20}}
+onkeydown=e=>{k[e.key]=1;if(!on||dead){reset();on=true}};onkeyup=e=>k[e.key]=0;
+c.onpointerdown=e=>{if(!on||dead){reset();on=true;return}const r=c.getBoundingClientRect();k.t=e.clientX-r.left<r.width/2?-1:1};
+onpointerup=()=>k.t=0;
+function tmax(px,col,a){x.globalAlpha=a;x.fillStyle=col;x.fillRect(px-9,Y-28,18,56);x.fillStyle='#000';x.fillRect(px-5,Y-36,10,10);x.fillRect(px-5,Y+26,10,10);x.fillStyle='#ff0';x.fillRect(px-4,Y-30,8,4);x.fillStyle='#fff';x.font='bold 8px sans-serif';x.fillText('T',px-3,Y+4);x.globalAlpha=1}
+function step(){
+ if(on&&!dead){
+  const d=(k.ArrowLeft||k.q||k.a?-1:0)+(k.ArrowRight||k.d?1:0)+(k.t||0);
+  p=Math.max(30,Math.min(W-30,p+d*4.5));rec.push(p);t++;road=(road+6)%40;
+  coin.y+=4;if(coin.y>H)coin=newCoin();
+  if(Math.abs(coin.x-p)<20&&Math.abs(coin.y-Y)<30){score+=5;coin=newCoin()}
+  for(const g of ghosts)if(Math.abs(g[t-1]-p)<18){dead=true;if(score>best)localStorage.tmaxBest=best=score}
+  if(t>=R){ghosts.push(rec);rec=[];t=0;score+=10}
+ }
+ x.fillStyle='#333';x.fillRect(0,0,W,H);x.fillStyle='#ccc';
+ for(let i=-40;i<H;i+=40){x.fillRect(W/3-2,i+road,4,20);x.fillRect(2*W/3-2,i+road,4,20)}
+ x.fillStyle='#fc0';x.beginPath();x.arc(coin.x,coin.y,8,0,7);x.fill();
+ ghosts.forEach((g,i)=>tmax(g[Math.min(t,R-1)],`hsl(${i*60+180},80%,60%)`,.45));
+ tmax(p,'#e22',1);
+ x.fillStyle='#fff';x.font='bold 18px sans-serif';x.fillText(`Score ${score}  Fantômes ${ghosts.length}`,10,26);
+ x.fillText(`Record ${best}`,10,48);x.fillStyle='#0f0';x.fillRect(0,H-6,W*t/R,6);
+ if(!on||dead){x.fillStyle='rgba(0,0,0,.7)';x.fillRect(0,180,W,140);x.fillStyle='#fff';x.textAlign='center';
+  x.font='bold 26px sans-serif';x.fillText(dead?'Percuté par ton passé !':'TMAX FANTÔME',W/2,230);
+  x.font='16px sans-serif';x.fillText('Appuie / touche pour rouler',W/2,280);x.textAlign='left'}
+ requestAnimationFrame(step)}
+reset();step();
+</script></body></html>
